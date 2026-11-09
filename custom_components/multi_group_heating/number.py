@@ -156,3 +156,4 @@ class GroupPresetNumber(_BaseHeatingNumber):
             self._group_idx, self._mode_key, value
         )
         self.async_write_ha_state()
+

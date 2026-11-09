@@ -168,3 +168,4 @@ class MultiGroupHeatingOptionsFlow(OptionsFlow):
             step_id="init",
             data_schema=_build_schema(merged),
         )
+

@@ -33,7 +33,7 @@ Because the integration decouples **Schedule Mode Transitions** from **Individua
 ## Installation via Home Assistant Marketplace (HACS)
 
 1. Open **Marketplace (HACS)** in Home Assistant → **3-dots menu (top right) → Custom repositories**.
-2. Add your GitHub repository URL with Category: **Integration**.
+2. Add `https://github.com/cpetra/ha-multi-group-heating` with Category: **Integration**.
 3. Download **Multi-Group Boiler Heating** and restart Home Assistant.
 4. Go to **Settings → Devices & Services → Add Integration → Multi-Group Boiler Heating** and select:
    - Your **Boiler Thermostat Entity** (`climate.*`)

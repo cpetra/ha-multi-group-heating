@@ -76,3 +76,4 @@ class BoilerDemandActionSensor(SensorEntity):
         action, attrs = self._controller.evaluate_boiler_demand()
         self._attr_native_value = action
         self._attr_extra_state_attributes = attrs
+

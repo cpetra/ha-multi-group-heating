@@ -1,12 +1,13 @@
 {
   "domain": "multi_group_heating",
   "name": "Multi-Group Boiler Heating",
-  "codeowners": ["@costa"],
+  "codeowners": ["@cpetra"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/costa/ha-multi-group-heating",
+  "documentation": "https://github.com/cpetra/ha-multi-group-heating",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/costa/ha-multi-group-heating/issues",
+  "issue_tracker": "https://github.com/cpetra/ha-multi-group-heating/issues",
   "requirements": [],
   "version": "1.0.0"
 }
+

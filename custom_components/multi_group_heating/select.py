@@ -62,3 +62,4 @@ class HeatingModeSelect(SelectEntity, RestoreEntity):
     async def async_select_option(self, option: str) -> None:
         """Change the selected mode and push preset targets to all groups."""
         await self._controller.async_set_mode(option, apply_presets=True)
+

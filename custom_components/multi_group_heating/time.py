@@ -71,3 +71,4 @@ class HeatingScheduleTimeEntity(TimeEntity, RestoreEntity):
         """Update the transition time and re-register daily schedule listener."""
         self._controller.update_schedule_time(self._slot_id, value)
         self.async_write_ha_state()
+
