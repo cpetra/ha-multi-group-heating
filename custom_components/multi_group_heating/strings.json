@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Multi-Group Boiler Heating",
+        "description": "Configure the central boiler thermostat and up to 5 radiator thermostat (TRV) groups.",
+        "data": {
+          "boiler_entity": "Boiler Thermostat Entity",
+          "hysteresis_deadband": "Lower Hysteresis Deadband (°C)",
+          "boiler_firing_temp": "Boiler Firing Setpoint (°C)",
+          "zigbee_retry_delay": "Sleepy Zigbee Verification Retry Delay (s)",
+          "auto_control_boiler": "Automatically control the boiler thermostat (start / keep / stop)",
+          "group_1_name": "Group 1 Name",
+          "group_1_trvs": "Group 1 TRVs",
+          "group_2_name": "Group 2 Name",
+          "group_2_trvs": "Group 2 TRVs",
+          "group_3_name": "Group 3 Name",
+          "group_3_trvs": "Group 3 TRVs",
+          "group_4_name": "Group 4 Name",
+          "group_4_trvs": "Group 4 TRVs",
+          "group_5_name": "Group 5 Name",
+          "group_5_trvs": "Group 5 TRVs"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This boiler thermostat is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Multi-Group Boiler Heating Options",
+        "data": {
+          "boiler_entity": "Boiler Thermostat Entity",
+          "hysteresis_deadband": "Lower Hysteresis Deadband (°C)",
+          "boiler_firing_temp": "Boiler Firing Setpoint (°C)",
+          "zigbee_retry_delay": "Sleepy Zigbee Verification Retry Delay (s)",
+          "auto_control_boiler": "Automatically control the boiler thermostat (start / keep / stop)",
+          "group_1_name": "Group 1 Name",
+          "group_1_trvs": "Group 1 TRVs",
+          "group_2_name": "Group 2 Name",
+          "group_2_trvs": "Group 2 TRVs",
+          "group_3_name": "Group 3 Name",
+          "group_3_trvs": "Group 3 TRVs",
+          "group_4_name": "Group 4 Name",
+          "group_4_trvs": "Group 4 TRVs",
+          "group_5_name": "Group 5 Name",
+          "group_5_trvs": "Group 5 TRVs"
+        }
+      }
+    }
+  }
+}
