@@ -2,8 +2,22 @@
 
 A standalone **Home Assistant Custom Integration** (for the Home Assistant Marketplace / HACS) that implements a complete **3-tier smart heating controller**:
 1. **Tier 1 — Schedule & Mode Manager**: Native `select` (`Away`, `Comfort`, `Day`, `Night`), 4 configurable daily `time` transition entities (`Morning Comfort`, `Day`, `Evening Comfort`, `Night`), and 20 `number` preset entities across **5 heating groups**.
-2. **Tier 2 — Virtual Group Target Binding & Sleepy-Zigbee Retry**: 5 virtual group target `number` entities (`TS Target <Group>`) that broadcast setpoints to each group's TRVs with a configurable `10s` verification retry while preserving manual single-room overrides between transitions.
+2. **Tier 2 — Virtual Group Target Binding & Sleepy-Zigbee Retry**: 5 virtual group target `number` entities (`TS Target <Group>`) that broadcast setpoints to each group's TRVs with a configurable `10s` verification retry **while allowing manual per-thermostat overrides that persist until the next schedule cycle**.
 3. **Tier 3 — Anti-Short-Cycling Boiler Hysteresis Controller (`0.5 °C` Deadband)**: Native `sensor` (`start` / `keep` / `stop`) that drives the central gas boiler thermostat (`climate`) only when a room cools by at least $\Delta T$ below its target and keeps heating until all active rooms reach target.
+
+---
+
+## Manual Per-Thermostat Override (Persists Until Next Cycle)
+
+> [!TIP]
+> **Manually adjusting any individual thermostat (via the Home Assistant UI or by turning the physical TRV knob) immediately overrides the schedule for that specific radiator—and stays in effect until the next scheduled transition.**
+
+Because the integration decouples **Schedule Mode Transitions** from **Individual TRV Telemetry**:
+- **Single-Element Override**: If *Dormitories* is currently scheduled at `19.0 °C` (`Night` mode) and you manually set `TS_Dorm1` to `21.5 °C` (or `17.0 °C`, or `off`), **only `TS_Dorm1` changes**. Every other thermostat in the *Dormitories* group remains at `19.0 °C`.
+- **Full Boiler Demand Integration**: The central boiler controller reads each TRV's **actual live target (`temperature` attribute)**, not the group target. Raising a single thermostat manually by $\ge 0.5\text{ °C}$ above its current room temperature immediately triggers boiler `start` to heat that room.
+- **Automatic Reset on Next Cycle**: The manual override is never overwritten by periodic polling or other rooms' temperature reports. It remains active until:
+  1. The **next scheduled daily time transition** (`Morning Comfort`, `Day`, `Evening Comfort`, or `Night`) fires, **or**
+  2. You manually change the **Heating Mode** (`select.*_heating_mode`) or the **Virtual Group Target** (`number.*_ts_target_<group>`).
 
 ---
 
@@ -32,7 +46,7 @@ A standalone **Home Assistant Custom Integration** (for the Home Assistant Marke
 
 ## Entities Created Automatically
 
- All entities are grouped under a single **Multi-Group Heating** service device and restore their state across Home Assistant restarts (`RestoreEntity`):
+All entities are grouped under a single **Multi-Group Heating** service device and restore their state across Home Assistant restarts (`RestoreEntity`):
 
 | Platform | Entities Created | Purpose |
 |---|---|---|
