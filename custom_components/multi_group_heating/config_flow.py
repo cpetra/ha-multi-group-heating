@@ -28,12 +28,10 @@ from .const import (
     CONF_GROUP_4_TRVS,
     CONF_GROUP_5_NAME,
     CONF_GROUP_5_TRVS,
-    CONF_HYSTERESIS,
     CONF_ZIGBEE_RETRY_DELAY,
     DEFAULT_AUTO_CONTROL_BOILER,
     DEFAULT_BOILER_FIRING_TEMP,
     DEFAULT_GROUPS,
-    DEFAULT_HYSTERESIS,
     DEFAULT_ZIGBEE_RETRY_DELAY,
     DOMAIN,
 )
@@ -47,18 +45,6 @@ def _build_schema(defaults: dict[str, Any]) -> vol.Schema:
             default=defaults.get(CONF_BOILER_ENTITY),
         ): selector.EntitySelector(
             selector.EntitySelectorConfig(domain="climate")
-        ),
-        vol.Required(
-            CONF_HYSTERESIS,
-            default=defaults.get(CONF_HYSTERESIS, DEFAULT_HYSTERESIS),
-        ): selector.NumberSelector(
-            selector.NumberSelectorConfig(
-                min=0.1,
-                max=2.0,
-                step=0.1,
-                unit_of_measurement="°C",
-                mode=selector.NumberSelectorMode.BOX,
-            )
         ),
         vol.Required(
             CONF_BOILER_FIRING_TEMP,
@@ -168,4 +154,3 @@ class MultiGroupHeatingOptionsFlow(OptionsFlow):
             step_id="init",
             data_schema=_build_schema(merged),
         )
-

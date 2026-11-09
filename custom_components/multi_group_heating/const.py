@@ -13,7 +13,6 @@ PLATFORMS: list[Platform] = [
 ]
 
 CONF_BOILER_ENTITY = "boiler_entity"
-CONF_HYSTERESIS = "hysteresis_deadband"
 CONF_BOILER_FIRING_TEMP = "boiler_firing_temp"
 CONF_ZIGBEE_RETRY_DELAY = "zigbee_retry_delay"
 CONF_AUTO_CONTROL_BOILER = "auto_control_boiler"
@@ -29,7 +28,6 @@ CONF_GROUP_4_TRVS = "group_4_trvs"
 CONF_GROUP_5_NAME = "group_5_name"
 CONF_GROUP_5_TRVS = "group_5_trvs"
 
-DEFAULT_HYSTERESIS = 0.6
 DEFAULT_BOILER_FIRING_TEMP = 25.0
 DEFAULT_ZIGBEE_RETRY_DELAY = 10
 DEFAULT_AUTO_CONTROL_BOILER = True
@@ -41,7 +39,6 @@ MODE_NIGHT = "Night"
 HEATING_MODES = [MODE_AWAY, MODE_COMFORT, MODE_DAY, MODE_NIGHT]
 
 STATE_START = "start"
-STATE_KEEP = "keep"
 STATE_STOP = "stop"
 
 SCHEDULE_SLOTS = [
@@ -103,4 +100,3 @@ DEFAULT_GROUPS = [
         },
     },
 ]
-

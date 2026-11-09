@@ -8,11 +8,12 @@ import logging
 from typing import Any
 
 from homeassistant.components.climate import (
-    ATTR_CURRENT_TEMPERATURE,
+    ATTR_HVAC_ACTION,
     ATTR_HVAC_MODE,
     DOMAIN as CLIMATE_DOMAIN,
     SERVICE_SET_HVAC_MODE,
     SERVICE_SET_TEMPERATURE,
+    HVACAction,
     HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -28,18 +29,15 @@ from .const import (
     CONF_AUTO_CONTROL_BOILER,
     CONF_BOILER_ENTITY,
     CONF_BOILER_FIRING_TEMP,
-    CONF_HYSTERESIS,
     CONF_ZIGBEE_RETRY_DELAY,
     DEFAULT_AUTO_CONTROL_BOILER,
     DEFAULT_BOILER_FIRING_TEMP,
     DEFAULT_GROUPS,
-    DEFAULT_HYSTERESIS,
     DEFAULT_ZIGBEE_RETRY_DELAY,
     DOMAIN,
     MODE_AWAY,
     MODE_DAY,
     SCHEDULE_SLOTS,
-    STATE_KEEP,
     STATE_START,
     STATE_STOP,
 )
@@ -48,7 +46,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class MultiGroupHeatingController:
-    """Coordinates schedule modes, 5 TRV groups, Zigbee retry, and boiler hysteresis."""
+    """Coordinates schedule modes, 5 TRV groups, Zigbee retry, and boiler demand."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize the controller."""
@@ -57,9 +55,6 @@ class MultiGroupHeatingController:
         cfg = {**entry.data, **entry.options}
 
         self.boiler_entity: str = cfg[CONF_BOILER_ENTITY]
-        self.hysteresis: float = float(
-            cfg.get(CONF_HYSTERESIS, DEFAULT_HYSTERESIS)
-        )
         self.boiler_firing_temp: float = float(
             cfg.get(CONF_BOILER_FIRING_TEMP, DEFAULT_BOILER_FIRING_TEMP)
         )
@@ -93,7 +88,6 @@ class MultiGroupHeatingController:
         self._group_target_listeners: dict[int, list[Callable[[], None]]] = {
             i: [] for i in range(1, 6)
         }
-        self._demand_listeners: list[Callable[[], None]] = []
         self._schedule_unsubs: dict[str, CALLBACK_TYPE] = {}
         self._retry_unsubs: dict[int, CALLBACK_TYPE] = {}
 
@@ -104,7 +98,7 @@ class MultiGroupHeatingController:
             identifiers={(DOMAIN, self.entry.entry_id)},
             name=f"Multi-Group Heating ({self.boiler_entity})",
             manufacturer="Costa",
-            model="3-Tier Multi-Group TRV & Boiler Hysteresis Controller",
+            model="3-Tier Multi-Group TRV & Boiler Demand Controller",
             entry_type=DeviceEntryType.SERVICE,
         )
 
@@ -172,11 +166,6 @@ class MultiGroupHeatingController:
         """Subscribe to virtual group target changes."""
         self._group_target_listeners[group_idx].append(cb)
         return lambda: self._group_target_listeners[group_idx].remove(cb)
-
-    def add_demand_listener(self, cb: Callable[[], None]) -> CALLBACK_TYPE:
-        """Subscribe to boiler demand recalculations."""
-        self._demand_listeners.append(cb)
-        return lambda: self._demand_listeners.remove(cb)
 
     async def async_set_mode(
         self, new_mode: str, apply_presets: bool = True
@@ -282,55 +271,32 @@ class MultiGroupHeatingController:
             )
 
     def evaluate_boiler_demand(self) -> tuple[str, dict[str, Any]]:
-        """Evaluate start / keep / stop boiler demand across all configured TRVs."""
+        """Evaluate start / stop boiler demand from TRV hvac_action ('heating' vs 'idle')."""
         active: list[str] = []
-        need_heat: list[str] = []
-        heating_valve: list[str] = []
-        satisfied: list[str] = []
+        heating_trvs: list[str] = []
+        idle_trvs: list[str] = []
 
         for entity_id in self.all_trvs:
             state = self.hass.states.get(entity_id)
             if state is None or state.state != HVACMode.HEAT:
                 continue
-            cur = state.attributes.get(ATTR_CURRENT_TEMPERATURE)
-            target = state.attributes.get(ATTR_TEMPERATURE)
-            hvac_action = state.attributes.get("hvac_action")
-            if cur is None or target is None:
-                continue
-            try:
-                cur_f = float(cur)
-                target_f = float(target)
-            except (ValueError, TypeError):
-                continue
-
             active.append(entity_id)
-            if cur_f <= round(target_f - self.hysteresis, 2):
-                need_heat.append(entity_id)
-            elif hvac_action == "heating" and cur_f < target_f:
-                heating_valve.append(entity_id)
+            if state.attributes.get(ATTR_HVAC_ACTION) == HVACAction.HEATING:
+                heating_trvs.append(entity_id)
             else:
-                satisfied.append(entity_id)
+                idle_trvs.append(entity_id)
 
-        if need_heat:
-            action = STATE_START
-        elif heating_valve:
-            action = STATE_KEEP
-        else:
-            action = STATE_STOP
-
+        action = STATE_START if heating_trvs else STATE_STOP
         attrs = {
             "boiler_entity": self.boiler_entity,
-            "hysteresis_deadband": self.hysteresis,
             "boiler_firing_temp": self.boiler_firing_temp,
             "auto_control_boiler": self.auto_control_boiler,
             "active_count": len(active),
-            "need_heat_count": len(need_heat),
-            "heating_valve_count": len(heating_valve),
-            "satisfied_count": len(satisfied),
+            "heating_count": len(heating_trvs),
+            "idle_count": len(idle_trvs),
             "active_trvs": active,
-            "need_heat_trvs": need_heat,
-            "heating_valve_trvs": heating_valve,
-            "satisfied_trvs": satisfied,
+            "heating_trvs": heating_trvs,
+            "idle_trvs": idle_trvs,
         }
         return action, attrs
 
@@ -362,4 +328,3 @@ class MultiGroupHeatingController:
                     },
                     blocking=False,
                 )
-

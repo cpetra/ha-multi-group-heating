@@ -6,10 +6,9 @@
         "description": "Configure the central boiler thermostat and up to 5 radiator thermostat (TRV) groups.",
         "data": {
           "boiler_entity": "Boiler Thermostat Entity",
-          "hysteresis_deadband": "Lower Hysteresis Deadband (°C)",
           "boiler_firing_temp": "Boiler Firing Setpoint (°C)",
           "zigbee_retry_delay": "Sleepy Zigbee Verification Retry Delay (s)",
-          "auto_control_boiler": "Automatically control the boiler thermostat (start / keep / stop)",
+          "auto_control_boiler": "Automatically control the boiler thermostat (start / stop)",
           "group_1_name": "Group 1 Name",
           "group_1_trvs": "Group 1 TRVs",
           "group_2_name": "Group 2 Name",
@@ -33,10 +32,9 @@
         "title": "Multi-Group Boiler Heating Options",
         "data": {
           "boiler_entity": "Boiler Thermostat Entity",
-          "hysteresis_deadband": "Lower Hysteresis Deadband (°C)",
           "boiler_firing_temp": "Boiler Firing Setpoint (°C)",
           "zigbee_retry_delay": "Sleepy Zigbee Verification Retry Delay (s)",
-          "auto_control_boiler": "Automatically control the boiler thermostat (start / keep / stop)",
+          "auto_control_boiler": "Automatically control the boiler thermostat (start / stop)",
           "group_1_name": "Group 1 Name",
           "group_1_trvs": "Group 1 TRVs",
           "group_2_name": "Group 2 Name",
@@ -52,4 +50,3 @@
     }
   }
 }
-
