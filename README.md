@@ -3,7 +3,7 @@
 A standalone **Home Assistant Custom Integration** (for the Home Assistant Marketplace / HACS) that implements a complete **3-tier smart heating controller**:
 1. **Tier 1 — Schedule & Mode Manager**: Native `select` (`Away`, `Comfort`, `Day`, `Night`), 4 configurable daily `time` transition entities (`Morning Comfort`, `Day`, `Evening Comfort`, `Night`), and 20 `number` preset entities across **5 heating groups**.
 2. **Tier 2 — Virtual Group Target Binding & Sleepy-Zigbee Retry**: 5 virtual group target `number` entities (`TS Target <Group>`) that broadcast setpoints to each group's TRVs with a configurable `10s` verification retry **while allowing manual per-thermostat overrides that persist until the next schedule cycle**.
-3. **Tier 3 — Anti-Short-Cycling Boiler Hysteresis Controller (`0.5 °C` Deadband)**: Native `sensor` (`start` / `keep` / `stop`) that drives the central gas boiler thermostat (`climate`) only when a room cools by at least $\Delta T$ below its target and keeps heating until all active rooms reach target.
+3. **Tier 3 — Anti-Short-Cycling Boiler Hysteresis Controller (`0.6 °C` Deadband)**: Native `sensor` (`start` / `keep` / `stop`) that drives the central gas boiler thermostat (`climate`) only when a room cools by at least $\Delta T \ge 0.6\text{ °C}$ below its target (matching the TRV `Eco` hardware valve-opening threshold) and keeps heating while any open valve (`hvac_action == 'heating'`) warms up to target.
 
 ---
 

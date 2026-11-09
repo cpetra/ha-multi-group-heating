@@ -285,6 +285,7 @@ class MultiGroupHeatingController:
         """Evaluate start / keep / stop boiler demand across all configured TRVs."""
         active: list[str] = []
         need_heat: list[str] = []
+        heating_valve: list[str] = []
         satisfied: list[str] = []
 
         for entity_id in self.all_trvs:
@@ -293,6 +294,7 @@ class MultiGroupHeatingController:
                 continue
             cur = state.attributes.get(ATTR_CURRENT_TEMPERATURE)
             target = state.attributes.get(ATTR_TEMPERATURE)
+            hvac_action = state.attributes.get("hvac_action")
             if cur is None or target is None:
                 continue
             try:
@@ -302,17 +304,19 @@ class MultiGroupHeatingController:
                 continue
 
             active.append(entity_id)
-            if cur_f <= (target_f - self.hysteresis):
+            if cur_f <= round(target_f - self.hysteresis, 2):
                 need_heat.append(entity_id)
-            elif cur_f >= target_f:
+            elif hvac_action == "heating" and cur_f < target_f:
+                heating_valve.append(entity_id)
+            else:
                 satisfied.append(entity_id)
 
         if need_heat:
             action = STATE_START
-        elif not active or len(satisfied) == len(active):
-            action = STATE_STOP
-        else:
+        elif heating_valve:
             action = STATE_KEEP
+        else:
+            action = STATE_STOP
 
         attrs = {
             "boiler_entity": self.boiler_entity,
@@ -321,9 +325,11 @@ class MultiGroupHeatingController:
             "auto_control_boiler": self.auto_control_boiler,
             "active_count": len(active),
             "need_heat_count": len(need_heat),
+            "heating_valve_count": len(heating_valve),
             "satisfied_count": len(satisfied),
             "active_trvs": active,
             "need_heat_trvs": need_heat,
+            "heating_valve_trvs": heating_valve,
             "satisfied_trvs": satisfied,
         }
         return action, attrs
