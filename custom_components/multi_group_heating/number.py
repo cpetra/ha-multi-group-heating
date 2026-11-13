@@ -1,10 +1,18 @@
-"""Virtual Group Target and Preset Number entities for Multi-Group Boiler Heating."""
+"""Virtual Group Target, Preset, and Batching Number entities for Multi-Group Boiler Heating."""
 
 from __future__ import annotations
 
-from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberMode
+from homeassistant.components.number import (
+    NumberDeviceClass,
+    NumberEntity,
+    NumberMode,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import (
+    EntityCategory,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -18,9 +26,12 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Virtual Group Target and Mode Preset numbers for all 5 groups."""
+    """Set up Virtual Group Target, Mode Preset, and Boiler Batching numbers."""
     controller: MultiGroupHeatingController = hass.data[DOMAIN][entry.entry_id]
-    entities: list[NumberEntity] = []
+    entities: list[NumberEntity] = [
+        BoilerMinOffNumber(controller),
+        BoilerSingleTrvWaitNumber(controller),
+    ]
     for idx in sorted(controller.groups):
         entities.append(GroupTargetNumber(controller, idx))
         for mode_key in HEATING_MODES:
@@ -42,7 +53,7 @@ class _BaseHeatingNumber(NumberEntity, RestoreEntity):
 
 
 class GroupTargetNumber(_BaseHeatingNumber):
-    """Virtual Group Target temperature that propagates changes to group TRVs."""
+    """Virtual Group Target temperature that propagates changes to active group TRVs."""
 
     _attr_icon = "mdi:thermostat"
 
@@ -102,7 +113,7 @@ class GroupTargetNumber(_BaseHeatingNumber):
         self.async_write_ha_state()
 
     async def async_set_native_value(self, value: float) -> None:
-        """Set virtual group target and broadcast to all TRVs in this group."""
+        """Set virtual group target and push paced updates to active TRVs in this group."""
         await self._controller.async_set_group_target(
             self._group_idx, value, push_to_trvs=True
         )
@@ -157,3 +168,114 @@ class GroupPresetNumber(_BaseHeatingNumber):
         )
         self.async_write_ha_state()
 
+
+class _BaseBatchingMinutesNumber(NumberEntity, RestoreEntity):
+    """Base class for boiler anti-short-cycle and load-batching minute settings."""
+
+    _attr_has_entity_name = True
+    _attr_device_class = NumberDeviceClass.DURATION
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+    _attr_native_min_value = 0
+    _attr_native_max_value = 30
+    _attr_native_step = 1
+    _attr_mode = NumberMode.BOX
+    _attr_should_poll = False
+
+
+class BoilerMinOffNumber(_BaseBatchingMinutesNumber):
+    """Stage 1 minimum off-time / anti-short-cycle cooldown duration (0 = disabled)."""
+
+    _attr_name = "Boiler Anti-Cycle Cooldown"
+    _attr_icon = "mdi:timer-pause-outline"
+
+    def __init__(self, controller: MultiGroupHeatingController) -> None:
+        """Initialize the anti-cycle cooldown duration entity."""
+        self._controller = controller
+        self._attr_unique_id = (
+            f"{controller.entry.entry_id}_boiler_min_off_minutes"
+        )
+        self._attr_device_info = controller.device_info
+
+    @property
+    def native_value(self) -> float:
+        """Return configured anti-cycle cooldown minutes."""
+        return float(self._controller.boiler_min_off_minutes)
+
+    async def async_added_to_hass(self) -> None:
+        """Restore saved cooldown duration on startup."""
+        await super().async_added_to_hass()
+        last_state = await self.async_get_last_state()
+        if last_state is not None and last_state.state not in (
+            "unknown",
+            "unavailable",
+        ):
+            try:
+                await self._controller.async_set_boiler_min_off_minutes(
+                    int(float(last_state.state)), reconcile=False
+                )
+            except ValueError:
+                pass
+        self.async_on_remove(
+            self._controller.add_batching_config_listener(self._handle_update)
+        )
+
+    @callback
+    def _handle_update(self) -> None:
+        """Write state update."""
+        self.async_write_ha_state()
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Update anti-cycle cooldown minutes."""
+        await self._controller.async_set_boiler_min_off_minutes(
+            int(round(value)), reconcile=True
+        )
+
+
+class BoilerSingleTrvWaitNumber(_BaseBatchingMinutesNumber):
+    """Stage 2 single-TRV partner wait duration in mild weather (0 = disabled)."""
+
+    _attr_name = "Boiler Single-TRV Partner Wait"
+    _attr_icon = "mdi:timer-sync-outline"
+
+    def __init__(self, controller: MultiGroupHeatingController) -> None:
+        """Initialize the single-TRV partner wait duration entity."""
+        self._controller = controller
+        self._attr_unique_id = (
+            f"{controller.entry.entry_id}_boiler_single_trv_wait_minutes"
+        )
+        self._attr_device_info = controller.device_info
+
+    @property
+    def native_value(self) -> float:
+        """Return configured single-TRV partner wait minutes."""
+        return float(self._controller.boiler_single_trv_wait_minutes)
+
+    async def async_added_to_hass(self) -> None:
+        """Restore saved partner wait duration on startup."""
+        await super().async_added_to_hass()
+        last_state = await self.async_get_last_state()
+        if last_state is not None and last_state.state not in (
+            "unknown",
+            "unavailable",
+        ):
+            try:
+                await self._controller.async_set_single_trv_wait_minutes(
+                    int(float(last_state.state)), reconcile=False
+                )
+            except ValueError:
+                pass
+        self.async_on_remove(
+            self._controller.add_batching_config_listener(self._handle_update)
+        )
+
+    @callback
+    def _handle_update(self) -> None:
+        """Write state update."""
+        self.async_write_ha_state()
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Update single-TRV partner wait minutes."""
+        await self._controller.async_set_single_trv_wait_minutes(
+            int(round(value)), reconcile=True
+        )

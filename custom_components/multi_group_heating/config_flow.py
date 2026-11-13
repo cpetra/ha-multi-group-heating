@@ -18,6 +18,7 @@ from .const import (
     CONF_AUTO_CONTROL_BOILER,
     CONF_BOILER_ENTITY,
     CONF_BOILER_FIRING_TEMP,
+    CONF_COLD_WEATHER_THRESHOLD,
     CONF_GROUP_1_NAME,
     CONF_GROUP_1_TRVS,
     CONF_GROUP_2_NAME,
@@ -28,10 +29,16 @@ from .const import (
     CONF_GROUP_4_TRVS,
     CONF_GROUP_5_NAME,
     CONF_GROUP_5_TRVS,
+    CONF_OUTDOOR_TEMP_ENTITY,
+    CONF_URGENT_DEFICIT_THRESHOLD,
+    CONF_ZIGBEE_PACING_DELAY,
     CONF_ZIGBEE_RETRY_DELAY,
     DEFAULT_AUTO_CONTROL_BOILER,
     DEFAULT_BOILER_FIRING_TEMP,
+    DEFAULT_COLD_WEATHER_THRESHOLD,
     DEFAULT_GROUPS,
+    DEFAULT_URGENT_DEFICIT_THRESHOLD,
+    DEFAULT_ZIGBEE_PACING_DELAY,
     DEFAULT_ZIGBEE_RETRY_DELAY,
     DOMAIN,
 )
@@ -39,6 +46,16 @@ from .const import (
 
 def _build_schema(defaults: dict[str, Any]) -> vol.Schema:
     """Build the config/options schema with 5 heating groups and boiler parameters."""
+    outdoor_default = defaults.get(CONF_OUTDOOR_TEMP_ENTITY)
+    outdoor_key = (
+        vol.Optional(
+            CONF_OUTDOOR_TEMP_ENTITY,
+            description={"suggested_value": outdoor_default},
+        )
+        if outdoor_default
+        else vol.Optional(CONF_OUTDOOR_TEMP_ENTITY)
+    )
+
     schema_dict: dict[Any, Any] = {
         vol.Required(
             CONF_BOILER_ENTITY,
@@ -57,6 +74,51 @@ def _build_schema(defaults: dict[str, Any]) -> vol.Schema:
                 max=30.0,
                 step=0.5,
                 unit_of_measurement="°C",
+                mode=selector.NumberSelectorMode.BOX,
+            )
+        ),
+        outdoor_key: selector.EntitySelector(
+            selector.EntitySelectorConfig(domain=["sensor", "weather"])
+        ),
+        vol.Required(
+            CONF_COLD_WEATHER_THRESHOLD,
+            default=defaults.get(
+                CONF_COLD_WEATHER_THRESHOLD, DEFAULT_COLD_WEATHER_THRESHOLD
+            ),
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=-15.0,
+                max=15.0,
+                step=0.5,
+                unit_of_measurement="°C",
+                mode=selector.NumberSelectorMode.BOX,
+            )
+        ),
+        vol.Required(
+            CONF_URGENT_DEFICIT_THRESHOLD,
+            default=defaults.get(
+                CONF_URGENT_DEFICIT_THRESHOLD, DEFAULT_URGENT_DEFICIT_THRESHOLD
+            ),
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0.5,
+                max=3.0,
+                step=0.1,
+                unit_of_measurement="°C",
+                mode=selector.NumberSelectorMode.BOX,
+            )
+        ),
+        vol.Required(
+            CONF_ZIGBEE_PACING_DELAY,
+            default=defaults.get(
+                CONF_ZIGBEE_PACING_DELAY, DEFAULT_ZIGBEE_PACING_DELAY
+            ),
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=10,
+                step=1,
+                unit_of_measurement="s",
                 mode=selector.NumberSelectorMode.BOX,
             )
         ),
@@ -106,6 +168,14 @@ def _build_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema(schema_dict)
 
 
+def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
+    """Ensure optional fields cleared in the UI explicitly overwrite previous values."""
+    cleaned = dict(user_input)
+    if not cleaned.get(CONF_OUTDOOR_TEMP_ENTITY):
+        cleaned[CONF_OUTDOOR_TEMP_ENTITY] = None
+    return cleaned
+
+
 class MultiGroupHeatingConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Multi-Group Boiler Heating."""
 
@@ -116,11 +186,12 @@ class MultiGroupHeatingConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle the initial step."""
         if user_input is not None:
-            await self.async_set_unique_id(user_input[CONF_BOILER_ENTITY])
+            cleaned = _normalize_input(user_input)
+            await self.async_set_unique_id(cleaned[CONF_BOILER_ENTITY])
             self._abort_if_unique_id_configured()
             return self.async_create_entry(
-                title=f"Multi-Group Heating ({user_input[CONF_BOILER_ENTITY]})",
-                data=user_input,
+                title=f"Multi-Group Heating ({cleaned[CONF_BOILER_ENTITY]})",
+                data=cleaned,
             )
 
         return self.async_show_form(
@@ -147,7 +218,9 @@ class MultiGroupHeatingOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            return self.async_create_entry(
+                title="", data=_normalize_input(user_input)
+            )
 
         merged = {**self._config_entry.data, **self._config_entry.options}
         return self.async_show_form(

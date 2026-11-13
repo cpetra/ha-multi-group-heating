@@ -3,11 +3,15 @@
     "step": {
       "user": {
         "title": "Multi-Group Boiler Heating",
-        "description": "Configure the central boiler thermostat and up to 5 radiator thermostat (TRV) groups.",
+        "description": "Configure the central boiler thermostat, two-stage load-batching thresholds, sleepy-Zigbee pacing, and up to 5 radiator thermostat (TRV) groups.",
         "data": {
           "boiler_entity": "Boiler Thermostat Entity",
           "boiler_firing_temp": "Boiler Firing Setpoint (°C)",
-          "zigbee_retry_delay": "Sleepy Zigbee Verification Retry Delay (s)",
+          "outdoor_temp_entity": "Outdoor Temperature Sensor or Weather Entity (Optional)",
+          "cold_weather_threshold": "Cold Weather Immediate-Start Threshold (°C)",
+          "urgent_deficit_threshold": "Urgent Room Deficit Threshold (°C below target)",
+          "zigbee_pacing_delay": "Per-TRV Zigbee Command Pacing Delay (s)",
+          "zigbee_retry_delay": "Physical Setpoint & Eco Valve Verification Delay (s)",
           "auto_control_boiler": "Automatically control the boiler thermostat (start / stop)",
           "group_1_name": "Group 1 Name",
           "group_1_trvs": "Group 1 TRVs",
@@ -33,7 +37,11 @@
         "data": {
           "boiler_entity": "Boiler Thermostat Entity",
           "boiler_firing_temp": "Boiler Firing Setpoint (°C)",
-          "zigbee_retry_delay": "Sleepy Zigbee Verification Retry Delay (s)",
+          "outdoor_temp_entity": "Outdoor Temperature Sensor or Weather Entity (Optional)",
+          "cold_weather_threshold": "Cold Weather Immediate-Start Threshold (°C)",
+          "urgent_deficit_threshold": "Urgent Room Deficit Threshold (°C below target)",
+          "zigbee_pacing_delay": "Per-TRV Zigbee Command Pacing Delay (s)",
+          "zigbee_retry_delay": "Physical Setpoint & Eco Valve Verification Delay (s)",
           "auto_control_boiler": "Automatically control the boiler thermostat (start / stop)",
           "group_1_name": "Group 1 Name",
           "group_1_trvs": "Group 1 TRVs",

@@ -15,11 +15,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     controller = MultiGroupHeatingController(hass, entry)
     hass.data[DOMAIN][entry.entry_id] = controller
 
-    controller.register_schedule_timers()
-    entry.async_on_unload(controller.clear_schedule_timers)
-    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
-
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    controller.start()
+    entry.async_on_unload(controller.shutdown)
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     return True
 
 
@@ -36,4 +36,3 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)
-
